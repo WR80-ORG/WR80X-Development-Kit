@@ -1,1 +1,0 @@
-copy bin\wr80emu.exe ..\..\Tools\WR80\Windows

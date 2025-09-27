@@ -234,6 +234,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	
 	if(size > 0 && hexdump)
 		hex_dump(memory, 0x000, size);
 		
