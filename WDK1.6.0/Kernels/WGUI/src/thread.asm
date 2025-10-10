@@ -1,10 +1,7 @@
-Begin:
+StartTasks:
 	clr
 	call ConfigTimer
 	;call ConfigKeyboard
-	
-	std $0D
-	ld r1
 	
 	std IntTable::8
 	out p0
@@ -15,8 +12,8 @@ Begin:
 	pushs
 	popb
 .lock:
-	std $41
-	out p3
+	;std $41
+	;out p3
 	jp .lock
 	
 
@@ -278,98 +275,6 @@ Unknown:
 
 iret
 ; ------------------
-
-Process1:
-	ei
-	pushs
-	popb
-	std 0x20
-	ssp
-	
-	std $42
-	ld r2
-	cdr
-	ld r0
-	std $31
-	ld r1
-	push r1
-	cdr
-	ld r1
-	.loop_proc1:
-		stl r2
-		out p3
-		in p3
-		bt r0
-		jz .loop_proc1
-		pop r1
-		bt r1
-		jz .ret_proc1
-		push r1
-		jp .loop_proc1
-		
-.ret_proc1:
-	pushb
-	pops
-	di
-ret
-
-Process2:
-	ei
-	pushs
-	popb
-	std 0x20
-	ssp
-	
-	std $43
-	ld r2
-	cdr
-	ld r0
-	std $32
-	ld r1
-	.loop_proc2:
-		stl r2
-		out p3
-		in p3
-		bt r0
-		jz .loop_proc2
-		bt r1
-		jz .ret_proc2
-		jp .loop_proc2
-		
-.ret_proc2:
-	pushb
-	pops
-	di
-ret
-
-Process3:
-	ei
-	pushs
-	popb
-	std 0x20
-	ssp
-	
-	std $44
-	ld r2
-	cdr
-	ld r0
-	std $33
-	ld r1
-	.loop_proc3:
-		stl r2
-		out p3
-		in p3
-		bt r0
-		jz .loop_proc3
-		bt r1
-		jz .ret_proc3
-		jp .loop_proc3
-		
-.ret_proc3:
-	pushb
-	pops
-	di
-ret
 
 
 ConfigTimer:
