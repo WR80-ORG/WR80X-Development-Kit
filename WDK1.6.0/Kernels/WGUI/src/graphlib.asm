@@ -11,6 +11,7 @@ DrawBackGround:
 	
 	; Configura mapeamento de incremento
 	std P4_P5
+	ld r7
 	idc
 	
 .Loop:
@@ -31,21 +32,25 @@ DrawBackGround:
 
 SetIncP5:
 	std P4_P5
+	ld r7
 	idc
 ret
 
 SetIncP4:
 	std _P4
+	ld r7
 	idc
 ret
 
 SetIncR0:
 	std _R0
+	ld r7
 	idc
 ret
 
 SetIncP1:
 	std _P1
+	ld r7
 	idc
 ret
 
@@ -262,14 +267,20 @@ DrawWindow:
 	pop r4
 	
 	std _R4
+	ld r7
 	idc
 	incr
 	
 	std _R5
+	ld r7
 	idc
 	incr
 	
+	push r4
+	std FONT_COLOR
+	ld r6
 	call PrintString
+	pop r4
 ret
 
 CalcSubWindow:
@@ -287,10 +298,12 @@ CalcSubWindow:
 	ld r2
 	
 	std _R4
+	ld r7
 	idc
 	incr
 	
 	std _DR
+	ld r7
 	idc
 	popd
 	decr
@@ -310,6 +323,7 @@ PaintTop:
 	push r6
 	
 	std _R1
+	ld r7
 	idc
 	decr
 	
@@ -320,10 +334,12 @@ PaintTop:
 	ld r2
 	
 	std _R4
+	ld r7
 	idc
 	incr
 	
 	std _R5
+	ld r7
 	idc
 	incr
 	
@@ -348,18 +364,22 @@ PaintCenter:
 	push r6
 	
 	std _R1
+	ld r7
 	idc
 	decr
 	
 	std _R2
+	ld r7
 	idc
 	decr
 	
 	std _R4
+	ld r7
 	idc
 	incr
 	
 	std _R5
+	ld r7
 	idc
 	incr
 	
@@ -486,6 +506,7 @@ SetTextLowers:
 	jp .BeginRead2
 .IncP0:
 	std 0x00
+	ld r7
 	idc
 	incr
 	
@@ -509,7 +530,7 @@ SetTextLowers:
 		in p2
 		and r2
 		jz .ShiftR2
-		std FONT_COLOR
+		stl r6
 		out p6
 	.ShiftR2:
 		call SetIncP5
