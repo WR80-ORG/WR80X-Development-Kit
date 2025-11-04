@@ -20,8 +20,8 @@ macro .times ...
 		rep #-
 			db #.
 		endp
-		rep #.
-		endp
+		if #.
+		endf
 	endp
 endm
 
@@ -40,19 +40,48 @@ macro .mov _reg1, _reg2
 		ende
 	endf
 	else
-		if #_reg2 != .NaN
-			if #_reg2 == .NULL
-				cdr
-				ld #_reg1
+		if BP && SP
+			if #1 == BP
+				.push #1
+				.push #2
+				.pop #1
 			endf
-			else
-				std #_reg2
-				ld #_reg1
-			ende
+			if #1 == SP
+				.push #2
+				.pop #1
+				.pop #2
+			endf
 		endf
 		else
-			stl #_reg2
-			ld #_reg1
+			if BP || SP
+				if #2 != .NaN
+					std #2::8
+					.push DR
+					std #2::0
+					.push DR
+				endf
+				else
+					.push 0
+					.push #2
+				ende
+				.pop #1
+			endf
+			else
+				if #_reg2 != .NaN
+					if #_reg2 == .NULL
+						cdr
+						ld #_reg1
+					endf
+					else
+						std #_reg2
+						ld #_reg1
+					ende
+				endf
+				else
+					stl #_reg2
+					ld #_reg1
+				ende
+			ende
 		ende
 	ende
 endm
@@ -414,7 +443,7 @@ macro .mod _reg, _num
 endm
 
 macro .push _num
-	if #_num == .NaN
+	if #1 == .NaN
 		if #_num == DR
 			pushd
 		endf
@@ -472,24 +501,14 @@ endm
 
 macro .Invoke ...
 	if #* > 1
-		if #. == .NULL
+		if #.
 		endf
-		pushb
-		pushs
-		popb
+		.mov BP, SP
 		rep #-
-			if #% == .NaN
-				push #.
-			endf
-			else
-				std #.
-				pushd
-			ende
+			.push #.
 		endp
-		call #1
-		pushb
-		pops
-		popb
+		.Invoke #1
+		.mov SP, BP
 	endf
 	else
 		call #.
