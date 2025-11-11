@@ -5,16 +5,12 @@
 	#define BUFFER_SIZE 1024
 	#define LOCALHOST "127.0.0.1"
 	
-	#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-		#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-	#endif
-	
-	// Códigos de cor ANSI (versões brilhantes)
+	// CÃ³digos de cor ANSI (versÃµes brilhantes)
 	#define RESET   "\033[0m"
 	#define YELLOW 	"\033[38;2;255;255;0m"   	// amarelo brilhante (registradores)
-	#define PINK 	"\033[38;2;255;105;180m"   	// rosa brilhante (números hexadecimais)
-	#define BLUE 	"\033[96m"   				// azul brilhante (mnemônicos)
-	#define GREEN	"\033[92m"	 				// verde brilhante (numeros entre parenteses)
+	#define PINK 	"\033[38;2;255;105;180m"   	// rosa brilhante (nÃºmeros hexadecimais)
+	#define BLUE 	"\033[96m"   				// azul brilhante (mnemÃ´nicos)
+	#define GREEN	"\033[92m"	 				// verde brilhante (nÃºmeros entre parÃªnteses)
 
 	int CreateClient(int);
 	void CloseClient(void);
@@ -24,15 +20,11 @@
 	void print_help(void);
 	void print_commands(void);
 	void print_colored_response(char*);
-	void enableVTMode();
 	
-	WSADATA wsa;
-    SOCKET sock;
     struct sockaddr_in server;
+    int sock;
     
     char message[BUFFER_SIZE];
     char response[BUFFER_SIZE];
-    
-	
-	
+
 #endif

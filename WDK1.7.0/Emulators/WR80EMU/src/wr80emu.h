@@ -37,28 +37,31 @@
 #include <errno.h>
 #include <stdint.h>
 
-#if _WIN32	// Windows
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 
-	#include <conio.h>
-	#include <winsock2.h>
-	
-	#include <windows.h>
-	#include <process.h>
-	#include <ws2tcpip.h>
-
-#else 		// Linux
-
-	#include "linux/linuxc.h"
-	
-#endif 		// _WIN32 End
-
+#include "linux/linuxc.h"
 #include "wr80emu_data.h"
 
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR   -1
+#define Sleep(ms) usleep((ms) * 1000)
+#define closesocket(s) close(s)
+#define SOCKET int
+
 /**
- * Fun��o: load_hex
- * L� um arquivo texto com bytes hexadecimais (2 d�gitos por byte separados por espa�o).
+ * Funï¿½ï¿½o: load_hex
+ * Lï¿½ um arquivo texto com bytes hexadecimais (2 dï¿½gitos por byte separados por espaï¿½o).
  * Primeira linha deve ser "v2.0 raw".
- * Aloca dinamicamente a mem�ria e retorna via par�metro.
+ * Aloca dinamicamente a memï¿½ria e retorna via parï¿½metro.
  * Retorna a quantidade de bytes carregados ou -1 em caso de erro.
  */
 int load_hex(const char *filename, unsigned char **memory) {
@@ -70,7 +73,7 @@ int load_hex(const char *filename, unsigned char **memory) {
 
     char line[1024];
 
-    // L� a primeira linha e verifica o header
+    // Lï¿½ a primeira linha e verifica o header
     if (!fgets(line, sizeof(line), fp)) {
         fclose(fp);
         return -1;
@@ -96,7 +99,7 @@ int load_hex(const char *filename, unsigned char **memory) {
         return -1;
     }
 
-    // Aloca a mem�ria
+    // Aloca a memï¿½ria
     *memory = malloc(memory_size);
     clear_ram(*memory);
     if (!*memory) {
@@ -109,7 +112,7 @@ int load_hex(const char *filename, unsigned char **memory) {
     rewind(fp);
     fgets(line, sizeof(line), fp); // descarta novamente a primeira linha
 
-    // L� de novo, agora armazenando
+    // Lï¿½ de novo, agora armazenando
     size_t pos = 0;
     while (fscanf(fp, "%x", &byte_val) == 1) {
         (*memory)[pos++] = (unsigned char)byte_val;
@@ -120,9 +123,9 @@ int load_hex(const char *filename, unsigned char **memory) {
 }
 
 /**
- * Fun��o: load_bin
- * L� um arquivo bin�rio, aloca dinamicamente a mem�ria
- * e retorna via par�metro.
+ * Funï¿½ï¿½o: load_bin
+ * Lï¿½ um arquivo binï¿½rio, aloca dinamicamente a memï¿½ria
+ * e retorna via parï¿½metro.
  * Retorna a quantidade de bytes carregados ou -1 em caso de erro.
  */
 int load_bin(const char *filename, unsigned char **memory) {
@@ -143,7 +146,7 @@ int load_bin(const char *filename, unsigned char **memory) {
         return -1;
     }
 
-    // Aloca mem�ria
+    // Aloca memï¿½ria
     *memory = malloc(memory_size);
     clear_ram(*memory);
     if (!*memory) {
@@ -152,7 +155,7 @@ int load_bin(const char *filename, unsigned char **memory) {
         return -1;
     }
 
-    // L� o arquivo inteiro
+    // Lï¿½ o arquivo inteiro
     size_t read_bytes = fread(*memory, 1, filesize, fp);
 
     fclose(fp);
@@ -243,7 +246,7 @@ char* hexdump_dbg(unsigned char* code, uint16_t address, int size){
 // -----------------------------------------------------------------------------
 
 int16_t sign_extend(uint16_t value) {
-    // Mant�m apenas os 12 bits v�lidos
+    // Mantï¿½m apenas os 12 bits vï¿½lidos
     value &= 0x0FFF;
     if (value & 0x800) {
         value |= 0xF000;
@@ -252,7 +255,7 @@ int16_t sign_extend(uint16_t value) {
 }
 
 void print_bin4(uint8_t value) {
-    value &= 0x0F; // garante que s� ficam 4 bits
+    value &= 0x0F; // garante que sï¿½ ficam 4 bits
 
     for (int i = 3; i >= 0; i--) {
         printf("%d", (value >> i) & 1);
@@ -347,61 +350,50 @@ char* get_cpu_info(){
 }
 
 int CreateServer(int serverport){
-    // Inicializa Winsock
-    if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
-        printf("Winsock Initialization error. Code: %d\n", WSAGetLastError());
+    server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_fd < 0) {
+        perror("Socket Initialization error.");
         return 0;
     }
 
-    // Cria socket
-    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        printf("Error in create socket: %d\n", WSAGetLastError());
-        WSACleanup();
-        return 0;
-    }
+    int opt = 1;
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
+    struct sockaddr_in address;
+    memset(&address, 0, sizeof(address));
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(serverport);
 
-    // Bind
-    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) == SOCKET_ERROR) {
-        printf("Bind Error. Code: %d\n", WSAGetLastError());
-        closesocket(server_fd);
-        WSACleanup();
+    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        perror("Bind error");
+        close(server_fd);
         return 0;
     }
+
     return 1;
 }
 
 int GetConnection(bool dbg){
-    int c;
-    
-    // Escutar
+    socklen_t c = sizeof(struct sockaddr_in);
     listen(server_fd, 3);
-    //printf("Servidor aguardando conexoes na porta %d...\n", PORTA);
+
     if(!dbg)
-		system("start wr80dbg --listen-mode");
-	
-    c = sizeof(struct sockaddr_in);
+        system("./wr80dbg --listen-mode &"); // linux background
+    
     client_fd = accept(server_fd, (struct sockaddr*)&client, &c);
-    if (client_fd == INVALID_SOCKET) {
-        printf("Accept Error. Code: %d\n", WSAGetLastError());
-        closesocket(server_fd);
-        WSACleanup();
+    if (client_fd < 0) {
+        perror("Error in accept");
+        close(server_fd);
         return 0;
     }
-    
-    //char* response = get_cpu_info();
-	//send(client_fd, response, strlen(response), 0);
-	
+
     return 1;
 }
 
 void CloseServer(){
-	closesocket(client_fd);
-    closesocket(server_fd);
-    WSACleanup();
+    if (client_fd > 0) close(client_fd);
+    if (server_fd > 0) close(server_fd);
 }
 
 uint16_t get_address(char* addr){
@@ -426,6 +418,7 @@ uint16_t get_address(char* addr){
 		uint8_t num = (uint8_t) strtol(numstr, &endptr, 10);
 		return PX[num];
 	}
+	return 0;
 }
 
 int execute_command(const char* request){
@@ -541,16 +534,18 @@ void debug_process(bool dbg){
 			proc_ed();
 			exec_mode = false;
 			// Deixar socket bloqueante
-			u_long mode = 0;	// 1 = non-blocking, 0 = blocking
-		    ioctlsocket(client_fd, FIONBIO, &mode);
+            int flags = fcntl(client_fd, F_GETFL, 0);
+            fcntl(client_fd, F_SETFL, flags & ~O_NONBLOCK); // modo bloqueante
+            int mode = 1;
+            ioctl(client_fd, FIONBIO, &mode);
 		    
 		    char* response = get_cpu_info();
 		    send(client_fd, response, strlen(response), 0);
 		}else{
 			exec_mode = true;
-			// Deixar socket n�o-bloqueante
-			u_long mode = 1;	// 1 = non-blocking, 0 = blocking
-		    ioctlsocket(client_fd, FIONBIO, &mode);
+			// Deixar socket não-bloqueante
+			int flags = fcntl(client_fd, F_GETFL, 0); // não bloqueante
+            fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
 		
 		    char buffer[1024];
 		    int bytes = recv(client_fd, buffer, sizeof(buffer), 0);
@@ -618,7 +613,7 @@ void debug_process(bool dbg){
 	}
 }
 
-// ---------------------- Fun��es auxiliares ----------------------
+// ---------------------- Funções auxiliares ----------------------
 static uint8_t parse_port(const char *s) {
     if (s[0] == 'P' && s[1] >= '0' && s[1] <= '7' && s[2] == '\0') {
         return (uint8_t)(s[1] - '0');  // P0 -> 0, P1 -> 1, ...
@@ -645,10 +640,10 @@ static uint8_t parse_hardware(const char *s) {
 	return _IERR;
 }
 
-// ---------------------- Fun��o principal ------------------------
+// ---------------------- Função principal ------------------------
 void load_config(const char *filename) {
     FILE *f = fopen(filename, "r");
-    if (!f) return;  // se n�o existe, ignora
+    if (!f) return;  // se não existe, ignora
 	
     char line[128];
     uint8_t intr;
@@ -772,8 +767,9 @@ void ResetCommand(){
 	ctrl_cmd = 0x00;	// Zera comando
 }
 
-unsigned __stdcall keyboard(void *arg)
+void* keyboard(void* arg)
 {
+    (void)arg;
     while(keyb_run){
     	// Processa teclado
     	while(!_kbhit());
@@ -786,19 +782,21 @@ unsigned __stdcall keyboard(void *arg)
 		}
 		intr_bit = 1;
 	}
-    return 0;
+    return NULL;
 }
 
-unsigned __stdcall mouse(void *arg)
+void* mouse(void* arg)
 {
+    (void)arg;
     while(mouse_run){
     	// Processa mouse
 	}
-    return 0;
+    return NULL;
 }
 
-unsigned __stdcall timer(void *arg)
+void* timer(void* arg)
 {
+    (void)arg;
     while(timer_run){
     	// Processa timer
     	while(!timer_on);
@@ -815,27 +813,29 @@ unsigned __stdcall timer(void *arg)
 			while(!inte_bit);
 		}
 	}
-    return 0;
+    return NULL;
 }
 
 uint8_t OpenDevice(){
-	unsigned tid;
+	pthread_t keybThread, mouseThread, timerThread;
+	
 	switch(ctrl_cmd){
     	case 0:{
     		ResetCommand();
-    		keybThread = (HANDLE)_beginthreadex(NULL, 0, keyboard, NULL, 0, &tid);
+    		pthread_t keybThread, mouseThread, timerThread;
+            pthread_create(&keybThread, NULL, keyboard, NULL);
     		keyb_run = true;
 			break;
 		}
 		case 1:{
 			ResetCommand();
-			mouseThread = (HANDLE)_beginthreadex(NULL, 0, mouse, NULL, 0, &tid);
+            pthread_create(&mouseThread, NULL, mouse, NULL);
     		mouse_run = true;
 			break;
 		}
 		case 2:{
 			ResetCommand();
-			timerThread = (HANDLE)_beginthreadex(NULL, 0, timer, NULL, 0, &tid);
+            pthread_create(&timerThread, NULL, timer, NULL);
     		timer_run = true;
 			break;
 		}
@@ -845,14 +845,12 @@ uint8_t OpenDevice(){
 }
 
 uint8_t CloseDevice(){
-	unsigned tid;
 	switch(ctrl_cmd){
     	case 0:{
     		if(keyb_run){
     			ResetCommand();
     			keyb_run = false;
-				WaitForSingleObject(keybThread, 1000);
-    			CloseHandle(keybThread);
+				pthread_join(keybThread, NULL);
     			break;
 			}
 			return 0x02;	// Codigo de erro
@@ -861,8 +859,7 @@ uint8_t CloseDevice(){
 			if(mouse_run){
 				ResetCommand();
     			mouse_run = false;
-				WaitForSingleObject(mouseThread, 1000);
-    			CloseHandle(mouseThread);
+                pthread_join(mouseThread, NULL);
     			break;
 			}
 			return 0x02;	// Codigo de erro
@@ -871,8 +868,7 @@ uint8_t CloseDevice(){
 			if(timer_run){
 				ResetCommand();
     			timer_run = false;
-				WaitForSingleObject(timerThread, 1000);
-    			CloseHandle(timerThread);
+                pthread_join(timerThread, NULL);
     			break;
 			}
 			return 0x02;	// Codigo de erro
@@ -920,7 +916,7 @@ uint8_t DeviceData(){
 	return 0xFA;	// Codigo Padrao de reconhecimento
 }
 
-unsigned __stdcall controller(void *arg)
+void* controller(void* arg)
 {
     while(ctrl_run){
     	WaitSignal();	// Espera por um comando principal
@@ -955,7 +951,7 @@ unsigned __stdcall controller(void *arg)
 			}
 		}
 	}
-    return 0;
+    return NULL;
 }
 
 void proc_and(){
@@ -1165,7 +1161,7 @@ void proc_cdr(){
 
 void proc_clr(){
 	if(clr){
-		system("cls");
+		system("clear");
 		clr = 0;
 		return;
 	}

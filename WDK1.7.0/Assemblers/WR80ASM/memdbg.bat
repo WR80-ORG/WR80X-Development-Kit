@@ -1,1 +1,0 @@
-drmemory -- wr80asm.exe -m examples/%1

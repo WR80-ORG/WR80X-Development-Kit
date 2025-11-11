@@ -611,7 +611,9 @@ bool getIfValue(char** name1) {
 		new_value = strdup((const char*)macros->name);
 	}
 	else if (labels != NULL) {
-		new_value = strdup((const char*)itoa(labels->addr, endptr, 10));
+		char tmp_buf[32];
+        sprintf(tmp_buf, "%d", labels->addr);
+        new_value = strdup(tmp_buf);
 	}
 	else if (param != -1) {
 		new_value = strdup((const char*)currmacro->pvalues[param]);
@@ -625,7 +627,7 @@ bool getIfValue(char** name1) {
 		free(*name1);
 	*name1 = new_value;
 
-	// Condição booleana
+	// Condiï¿½ï¿½o booleana
 	bool nameCondition = (!i)
 		? (defines != NULL || labels != NULL || macros != NULL || param != -1)
 		: (defines == NULL && labels == NULL && macros == NULL && param == -1);
@@ -788,12 +790,12 @@ char* replace(const char* token, const char* old_substr, const char* new_substr)
     static char* buffer = NULL;
     static size_t buffer_capacity = 0;
 
-    // Se token aponta para dentro do buffer estático, precisamos copiá-lo
-    // para um local temporário antes de potencialmente free() o buffer.
+    // Se token aponta para dentro do buffer estï¿½tico, precisamos copiï¿½-lo
+    // para um local temporï¿½rio antes de potencialmente free() o buffer.
     char *local_copy = NULL;
     const char *src = token;
     if (buffer != NULL && token >= buffer && token < buffer + buffer_capacity) {
-        local_copy = strdup(token);   // cria cópia independente do token
+        local_copy = strdup(token);   // cria cï¿½pia independente do token
         if (!local_copy) return (char*)token; // falha em alocar: fallback
         src = local_copy;
     }
@@ -813,13 +815,13 @@ char* replace(const char* token, const char* old_substr, const char* new_substr)
     // Realocar APENAS se o buffer for pequeno
     if (buffer_capacity < new_size) {
         if (buffer) {
-            free(buffer); // agora seguro: src já é cópia se apontava para buffer
+            free(buffer); // agora seguro: src jï¿½ ï¿½ cï¿½pia se apontava para buffer
             buffer = NULL;
             buffer_capacity = 0;
         }
         buffer = (char*)malloc(new_size);
         if (!buffer) {
-            // cleanup da cópia temporária se existia
+            // cleanup da cï¿½pia temporï¿½ria se existia
             if (local_copy) { free(local_copy); local_copy = NULL; }
             buffer_capacity = 0;
             return (char*)token;
@@ -827,14 +829,14 @@ char* replace(const char* token, const char* old_substr, const char* new_substr)
         buffer_capacity = new_size;
     }
 
-    int prefix_len = (int)(pos - src); // pos aponta dentro de src (não em token, se copiamos)
+    int prefix_len = (int)(pos - src); // pos aponta dentro de src (nï¿½o em token, se copiamos)
 
     memcpy(buffer, src, prefix_len);
     memcpy(buffer + prefix_len, new_substr, new_len);
     strcpy(buffer + prefix_len + new_len, src + prefix_len + old_len);
     buffer[new_size - 1] = '\0';
 
-    // liberamos a cópia temporária porque já copiamos tudo para buffer
+    // liberamos a cï¿½pia temporï¿½ria porque jï¿½ copiamos tudo para buffer
     if (local_copy) {
         free(local_copy);
         local_copy = NULL;
@@ -1009,7 +1011,7 @@ int get_arg(const char* name){
 char* get_code(const char* beg_cmd, const char* end_cmd) {
     char* code = NULL;
     int total_size = 0;
-    int depth = 1; // já estamos dentro do bloco principal
+    int depth = 1; // jï¿½ estamos dentro do bloco principal
     linenum++;
     linebegin = linenum;
     char* line_tmp = NULL;
@@ -1061,7 +1063,7 @@ char* get_code(const char* beg_cmd, const char* end_cmd) {
 char* get_code_buffer(const char* beg_cmd, const char* end_cmd, const char** buffer) {
     char* code = NULL;
     int total_size = 0;
-    int depth = 1; // já estamos dentro do bloco principal
+    int depth = 1; // jï¿½ estamos dentro do bloco principal
     linenum++;
     linebegin = linenum;
     char* line_tmp = NULL;
@@ -1113,7 +1115,7 @@ char* get_code_buffer(const char* beg_cmd, const char* end_cmd, const char** buf
 
 bool skip_block(const char* begin, const char* end) {
     if (strcmp(token, begin) == 0) {
-        int depth = 1; // já estamos dentro de um rep
+        int depth = 1; // jï¿½ estamos dentro de um rep
         while (fgets(line, sizeof(line), fileopened)) {
         	line_to_upper();
             linenum++;		// 6
@@ -1130,7 +1132,7 @@ bool skip_block(const char* begin, const char* end) {
             } else if (strcmp(token, end) == 0) {
                 depth--; // achamos um endp
                 if (depth == 0) {
-                    break; // este é o endp que fecha o bloco inicial
+                    break; // este ï¿½ o endp que fecha o bloco inicial
                 }
             }
         }
@@ -1142,7 +1144,7 @@ bool skip_block(const char* begin, const char* end) {
 
 bool skip_block_buffer(const char* begin, const char* end, const char** buffer) {
     if (strcmp(token, begin) == 0) {
-        int depth = 1; // já estamos dentro de um rep
+        int depth = 1; // jï¿½ estamos dentro de um rep
         while (buffer_fgets(line, sizeof(line), buffer)) {
         	line_to_upper();
             linenum++;
@@ -1160,7 +1162,7 @@ bool skip_block_buffer(const char* begin, const char* end, const char** buffer) 
             } else if (strcmp(token, end) == 0) {
                 depth--; // achamos um endp
                 if (depth == 0) {
-                    break; // este é o endp que fecha o bloco inicial
+                    break; // este ï¿½ o endp que fecha o bloco inicial
                 }
             }
         }
@@ -1346,13 +1348,13 @@ bool get_label(int length){
 
 char** parse_parameters(int *argc_out) {
     char **pvalues = NULL;
-    *argc_out = 0; // zera o contador que será retornado
+    *argc_out = 0; // zera o contador que serï¿½ retornado
 
-    // Continua a partir de onde strtok parou (após _mov)
+    // Continua a partir de onde strtok parou (apï¿½s _mov)
     //char *token = token;
 
     while (token != NULL) {
-        // Remove espaços no início
+        // Remove espaï¿½os no inï¿½cio
         while (*token == ' ' || *token == '\t') token++;
 		
 		token[strcspn(token, " ")] = '\0';
@@ -1370,15 +1372,15 @@ char** parse_parameters(int *argc_out) {
 			token = replace(token, "##", argument);
 		}
 			
-        // Remove espaços e \n no final
+        // Remove espaï¿½os e \n no final
         size_t len = strlen(token);
         while (len > 0 && (token[len - 1] == ' ' || token[len - 1] == '\n' || token[len - 1] == '\r'))
             token[--len] = '\0';
 
-        // Realoca mais espaço no vetor de ponteiros
+        // Realoca mais espaï¿½o no vetor de ponteiros
         char **temp = realloc(pvalues, (*argc_out + 1) * sizeof(char*));	// LEAK: Raiz
         if (temp == NULL) {
-            // Libera caso dê erro
+            // Libera caso dï¿½ erro
             for (int i = 0; i < *argc_out; i++) free(pvalues[i]);
             free(pvalues);
             return NULL;
@@ -1396,7 +1398,7 @@ char** parse_parameters(int *argc_out) {
         memcpy(pvalues[*argc_out], token, len + 1); // copia incluindo '\0'
         (*argc_out)++;
 
-        // Próximo token separado por vírgula
+        // Prï¿½ximo token separado por vï¿½rgula
         token = strtok(NULL, ",");
     }
 

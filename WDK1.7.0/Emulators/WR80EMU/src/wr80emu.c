@@ -11,6 +11,9 @@
 #include "../wr80emu_private.h"
 #include "wr80emu.h"
 
+#include <pthread.h>
+#include <unistd.h>
+
 int main(int argc, char *argv[]) {
 	if (argc == 1) {
 		const char* description = FILE_DESCRIPTION;
@@ -257,7 +260,8 @@ int main(int argc, char *argv[]) {
 		if(devs.controller){
 			unsigned tid;
 			ctrl_run = true;
-    		conThread = (HANDLE)_beginthreadex(NULL, 0, controller, NULL, 0, &tid);
+			
+    		pthread_create(&conThread, NULL, controller, NULL);
 		}
 		
 		bool emulated = emulate_buffer(memory, size, emudbg);
@@ -270,8 +274,7 @@ int main(int argc, char *argv[]) {
 		
 		if(devs.controller){
 			ctrl_run = false;
-			WaitForSingleObject(conThread, 1000);
-    		CloseHandle(conThread);
+			pthread_join(conThread, NULL);
 		}
 		
 		free(memory);

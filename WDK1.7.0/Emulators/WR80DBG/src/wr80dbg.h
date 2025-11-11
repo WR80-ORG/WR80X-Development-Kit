@@ -26,12 +26,20 @@
 #include <math.h>
 #endif
 
-#include <winsock2.h>
-
-//#define _WIN32_WINNT 0x0A00  // Windows 10
-#ifdef WIN32
-	#include <windows.h>
-	#include <ws2tcpip.h>
+#ifndef _UNISTD_H
+#include <unistd.h>
+#endif
+#ifndef _SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+#ifndef _NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifndef _ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+#ifndef _FCNTL_H
+#include <fcntl.h>
 #endif
 
 #include "wr80data.h"	// WR80 Variables, Structs and Data for Assembler
@@ -71,16 +79,10 @@ void print_commands(){
 }
 
 int CreateClient(int serverport){
-	// Inicializa Winsock
-    if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
-        printf("WinSock Initialization fail. Code: %d\n", WSAGetLastError());
-        return 0;
-    }
-
-    // Cria socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET) {
-        printf("Error in create socket: %d\n", WSAGetLastError());
-        WSACleanup();
+	// Inicializa socket POSIX
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("Socket creation failed");
         return 0;
     }
 
@@ -92,11 +94,11 @@ int CreateClient(int serverport){
     int count = 0;
     while (connect(sock, (struct sockaddr*)&server, sizeof(server)) < 0) {
     	if(count++ == 10){
-    		printf("Error in connect.\n");
-        	closesocket(sock);
-        	WSACleanup();
+    		perror("Error in connect");
+        	close(sock);
         	return 0;	
 		}
+        usleep(100000);
     }
     
     print_version();
@@ -107,16 +109,16 @@ int CreateClient(int serverport){
 }
 
 void CloseClient(){
-	closesocket(sock);
-    WSACleanup();
+	// Fecha o socket POSIX
+	close(sock);
 }
 
 void RunEmulator(char* binary, bool bin){
 	char command[512];
 	if(bin)
-    	snprintf(command, sizeof(command), "Start wr80emu -ed %s -b", binary);
+    	snprintf(command, sizeof(command), "wr80emu -ed %s -b &", binary);
     else
-    	snprintf(command, sizeof(command), "Start wr80emu -ed %s", binary);
+    	snprintf(command, sizeof(command), "wr80emu -ed %s &", binary);
     system(command);
 }
 
@@ -134,7 +136,7 @@ void DebugCPUInfo(){
 	    }
 	        
 	    if (strcmp(message, "c") == 0 || strcmp(message, "clear") == 0) {
-	        system("cls");
+	        system("clear");
 	        continue;
 	    }
 	    
@@ -155,9 +157,9 @@ void DebugCPUInfo(){
 	            
 	            if (strcmp(message, "e") == 0 || strcmp(message, "exec") == 0) {
 	            	exec_mode = true;
-	            	// Deixar socket nao-bloqueante
-					u_long mode = 1;	// 1 = non-blocking, 0 = blocking
-				    ioctlsocket(sock, FIONBIO, &mode);
+	            	// Deixar socket nÃ£o-bloqueante
+					int flags = fcntl(sock, F_GETFL, 0);
+				    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 	        	}
 	        }
 		}else{
@@ -178,9 +180,9 @@ void DebugCPUInfo(){
 				continue;
 	        }
 	        
-	        // Deixar socket nao-bloqueante
-			u_long mode = 1;	// 1 = non-blocking, 0 = blocking
-			ioctlsocket(sock, FIONBIO, &mode);
+	        // Deixar socket nÃ£o-bloqueante
+			int flags = fcntl(sock, F_GETFL, 0);
+			fcntl(sock, F_SETFL, flags | O_NONBLOCK);
 			memset(response, 0, BUFFER_SIZE);
 	        bytes = recv(sock, response, BUFFER_SIZE, 0);
 	        if(bytes > 0){
@@ -196,14 +198,14 @@ void DebugCPUInfo(){
 			}else{
 				printf("WARNING: Emulator in execution mode.\n");	
 			}
-			mode = 0;	// 1 = non-blocking, 0 = blocking
-			ioctlsocket(sock, FIONBIO, &mode);
+			flags = fcntl(sock, F_GETFL, 0);
+			fcntl(sock, F_SETFL, flags & ~O_NONBLOCK);
 	        
 		}
     }
 }
 
-// Testa se é um número hexadecimal (ex: 00, FFF, 0x00D)
+// Testa se Ã© um nÃºmero hexadecimal (ex: 00, FFF, 0x00D)
 int is_hex_number(const char *s) {
     if (strncmp(s, "0x", 2) == 0 || strncmp(s, "0X", 2) == 0) {
         s += 2;
@@ -216,7 +218,7 @@ int is_hex_number(const char *s) {
     return 1;
 }
 
-// Testa se é um mnemônico (ex: JP, MOV, ADD ... só letras maiúsculas)
+// Testa se Ã© um mnemÃ´nico (ex: JP, MOV, ADD ... sÃ³ letras maiÃºsculas)
 int is_mnemonic(const char *s) {
     int len = strlen(s);
     if (len == 0) return 0;
@@ -251,7 +253,7 @@ void print_colored_response(char *response) {
 	response[strlen(response)] = '\0';
 	
     while (*response) {
-        // quebra tokens por espaço, vírgula ou dois pontos
+        // quebra tokens por espaÃ§o, vÃ­rgula ou dois pontos
         if (isspace((unsigned char)*response) || *response == ',' || *response == ':') {
             if (i > 0) {
                 token[i] = '\0';
@@ -270,25 +272,11 @@ void print_colored_response(char *response) {
         }
     }
 
-    // Último token (se existir)
+    // Ãšltimo token (se existir)
     if (i > 0) {
         token[i] = '\0';
         print_token(token, 0);
     }
 }
-
-#ifdef WIN32
-void enableVTMode() {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) return;
-
-    DWORD dwMode = 0;
-    if (!GetConsoleMode(hOut, &dwMode)) return;
-
-    // habilita processamento de sequências ANSI
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    SetConsoleMode(hOut, dwMode);
-}
-#endif
 
 #endif

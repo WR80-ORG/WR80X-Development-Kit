@@ -1,6 +1,12 @@
 #ifndef __WR80EMU_DATA_H__
 #define __WR80EMU_DATA_H__
 
+#include <pthread.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
 #define MAX_MEMORY 4096  // WR80 maximum memory size (4 KB)
 #define EXTENSION_BIT 3
 #define EXTENSION 	(1 << EXTENSION_BIT)
@@ -108,13 +114,13 @@ bool exec_mode = false;
 int mnemonic = 0;
 int clr = 0;
 
-WSADATA wsa;
-SOCKET server_fd, client_fd;
+int server_fd, client_fd;
 struct sockaddr_in address, client;
-static HANDLE conThread = NULL;
-static HANDLE keybThread = NULL;
-static HANDLE mouseThread = NULL;
-static HANDLE timerThread = NULL;
+
+static pthread_t conThread;
+static pthread_t keybThread;
+static pthread_t mouseThread;
+static pthread_t timerThread;
 
 static volatile bool ctrl_run = false;
 static volatile uint8_t ctrl_sig = 0;
