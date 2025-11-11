@@ -22,6 +22,5 @@ Use the provided **Makefile** to build, install, and manage the Image Builder ut
 
 ## Notes
 
-- The tool automatically verifies version information from the official WR80 repository when building.  
 - Internet access is required for version checks and the `make update` command.  
 - Built binaries are placed inside the `/build` directory by default.
