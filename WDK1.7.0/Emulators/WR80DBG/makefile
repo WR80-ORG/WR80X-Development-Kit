@@ -35,7 +35,7 @@ default:
 		$(CC) $(CFLAGS) -c $$file -o $$obj; \
 	done; \
 	$(CC) $(CFLAGS) -o $(BUILD_DIR)/$(TARGET) $(OBJ); \
-	echo "[ok] Build complete -> (BUILD_DIR)/$(TARGET)"
+	echo "[ok] Build complete -> $(BUILD_DIR)/$(TARGET)"
 
 # --- Install ---
 install:
