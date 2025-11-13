@@ -1051,7 +1051,7 @@ void proc_out(){
 				uint16_t address = (uint16_t)((PX[devs.vid_h] & 0xFF) << 8) | (PX[devs.vid_l] & 0xFF);
 			    #ifdef WR80VM_PRIVATE_H
 				    pthread_mutex_lock(&cs);
-                    PX[port] = args.buf[address];
+                    args.buf[address] = PX[port];
                     pthread_mutex_unlock(&cs);
                 #endif
 			}
