@@ -58,7 +58,7 @@ void print_usage(){
 			" -h2b : Convert hex to bin in -s and -o parameters\n");
 }
 
-// Função recursiva para listar arquivos
+// Funï¿½ï¿½o recursiva para listar arquivos
 void list_files(const char *basePath, FileEntry **files, size_t *count, size_t *capacity) {
     DIR *dir;
     struct dirent *entry;
@@ -82,7 +82,7 @@ void list_files(const char *basePath, FileEntry **files, size_t *count, size_t *
         }
 
         if (S_ISDIR(st.st_mode)) {
-            // Recursão para subpastas
+            // Recursï¿½o para subpastas
             list_files(path, files, count, capacity);
         } else if (S_ISREG(st.st_mode)) {
             // Arquivo normal
@@ -112,10 +112,10 @@ void list_files(const char *basePath, FileEntry **files, size_t *count, size_t *
     closedir(dir);
 }
 
-// Função para salvar no arquivo binário
+// Funï¿½ï¿½o para salvar no arquivo binï¿½rio
 void save_to_binary(const char *binFile, const char* dir, const char* bootFile, FileEntry *files, size_t count) {
     uint16_t size_tmp = 0, addr_tmp = 0;
-	FILE *f = fopen(binFile, "r+b");
+	FILE *f = fopen(binFile, "w+b");
     if (!f) {
         perror("fopen");
         return;
@@ -209,7 +209,7 @@ char *load_file(const char *filename) {
     fclose(file);
 
     if (read_size != filesize) {
-        fprintf(stderr, "Error: imcomplete reading of file\n");
+        fprintf(stderr, "Error: incomplete reading of file\n");
         free(buffer);
         return NULL;
     }
@@ -276,9 +276,9 @@ unsigned char* load_hex(const char *filename, size_t *size) {
     return memory; // quantidade de bytes lidos
 }
 
-// Função para salvar no arquivo binário
+// Funï¿½ï¿½o para salvar no arquivo binï¿½rio
 void write_binary(const char *srcBin, const char* outBin, int seek) {
-	FILE *f = fopen(outBin, "r+b");
+	FILE *f = fopen(outBin, "w+b");
     if (!f) {
         perror("fopen");
         return;
@@ -295,7 +295,7 @@ void write_binary(const char *srcBin, const char* outBin, int seek) {
     printf("%d bytes of '%s' file added in seek %d\n", sizefile, srcBin, seek);
 }
 
-// Função para salvar no arquivo binário
+// Funï¿½ï¿½o para salvar no arquivo binï¿½rio
 void writeBin(const char *srcHex, const char* outBin) {
     size_t filesize = 0;
     unsigned char *data = load_hex(srcHex, &filesize);
@@ -306,7 +306,7 @@ void writeBin(const char *srcHex, const char* outBin) {
 
     FILE *f = fopen(outBin, "wb");
     if (!f) {
-        perror("Erro ao criar arquivo binário");
+        perror("Erro ao criar arquivo binï¿½rio");
         free(data);
         return;
     }

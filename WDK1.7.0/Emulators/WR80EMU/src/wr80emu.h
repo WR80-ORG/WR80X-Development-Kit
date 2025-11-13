@@ -50,6 +50,7 @@
 
 #include "linux/linuxc.h"
 #include "wr80emu_data.h"
+#include "../../common/new_window.h"
 
 #define INVALID_SOCKET -1
 #define SOCKET_ERROR   -1
@@ -379,7 +380,7 @@ int GetConnection(bool dbg){
     listen(server_fd, 3);
 
     if(!dbg)
-        system("./wr80dbg --listen-mode &"); // linux background
+        new_window("./wr80dbg --listen-mode");
     
     client_fd = accept(server_fd, (struct sockaddr*)&client, &c);
     if (client_fd < 0) {
@@ -817,12 +818,9 @@ void* timer(void* arg)
 }
 
 uint8_t OpenDevice(){
-	pthread_t keybThread, mouseThread, timerThread;
-	
 	switch(ctrl_cmd){
     	case 0:{
     		ResetCommand();
-    		pthread_t keybThread, mouseThread, timerThread;
             pthread_create(&keybThread, NULL, keyboard, NULL);
     		keyb_run = true;
 			break;
@@ -1019,11 +1017,11 @@ void proc_in(){
 		}else if(port == devs.vid_d && devs.monitor){
 			if(devs.rgb){
 				uint16_t address = (uint16_t)((PX[devs.vid_h] & 0xFF) << 8) | (PX[devs.vid_l] & 0xFF);
-				#ifdef WR80VM_PRIVATE_H
-					EnterCriticalSection(&cs);
-					PX[port] = args.buf[address];
-					LeaveCriticalSection(&cs);
-				#endif
+                #ifdef WR80VM_PRIVATE_H
+					pthread_mutex_lock(&cs);
+                    PX[port] = args.buf[address];
+                    pthread_mutex_unlock(&cs);
+                #endif
 			}
 		}
 		if(port == devs.ctr_d && devs.controller){
@@ -1051,11 +1049,11 @@ void proc_out(){
 				putchar(PX[port]);
 			}else if(port == devs.vid_d && devs.rgb){
 				uint16_t address = (uint16_t)((PX[devs.vid_h] & 0xFF) << 8) | (PX[devs.vid_l] & 0xFF);
-				#ifdef WR80VM_PRIVATE_H
-					EnterCriticalSection(&cs);
-					args.buf[address] = PX[port];
-					LeaveCriticalSection(&cs);
-				#endif
+			    #ifdef WR80VM_PRIVATE_H
+				    pthread_mutex_lock(&cs);
+                    PX[port] = args.buf[address];
+                    pthread_mutex_unlock(&cs);
+                #endif
 			}
 		}
 		if(port == devs.ctr_d && devs.controller){

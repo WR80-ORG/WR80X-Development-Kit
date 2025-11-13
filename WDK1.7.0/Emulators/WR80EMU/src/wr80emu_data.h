@@ -13,6 +13,14 @@
 #define SERVER_PORT 8080
 #define BUFFER_SIZE 1024
 
+#define MAX_PATH 4096
+#define CRITICAL_SECTION pthread_mutex_t
+#define InitializeCriticalSection(x) pthread_mutex_init(x, NULL)
+#define DeleteCriticalSection(x) pthread_mutex_destroy(x)
+#define EnterCriticalSection(x) pthread_mutex_lock(x)
+#define LeaveCriticalSection(x) pthread_mutex_unlock(x)
+
+
 // Emulator Functions Prototype
 // ---------------------------------------------
 int load_hex(const char*, unsigned char**);

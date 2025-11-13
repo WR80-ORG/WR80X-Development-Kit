@@ -43,6 +43,7 @@
 #endif
 
 #include "wr80data.h"	// WR80 Variables, Structs and Data for Assembler
+#include "../../common/new_window.h"
 // -----------------------------------------------------------------------------
 
 void print_version(){
@@ -116,10 +117,10 @@ void CloseClient(){
 void RunEmulator(char* binary, bool bin){
 	char command[512];
 	if(bin)
-    	snprintf(command, sizeof(command), "wr80emu -ed %s -b &", binary);
+    	snprintf(command, sizeof(command), "wr80emu -ed %s -b", binary);
     else
-    	snprintf(command, sizeof(command), "wr80emu -ed %s &", binary);
-    system(command);
+    	snprintf(command, sizeof(command), "wr80emu -ed %s", binary);
+    new_window(command);
 }
 
 void DebugCPUInfo(){
