@@ -115,8 +115,18 @@ int parse_number() {
     int base = 10;
 	int len = strcspn(input, "H");
 	
+	if (*input == '@') {
+        input++;
+        value = code_index;
+    }
+	// 'A'
+	else if(*input == '\''){
+			input++;
+			value = (int)*input;
+			input += 2;
+ 	}
     // $FF
-    if (*input == '$') {
+    else if (*input == '$') {
         input++;
         start = input;
         base = 16;
