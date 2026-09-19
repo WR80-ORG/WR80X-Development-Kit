@@ -28,25 +28,25 @@ Folders=
 IncludeVersionInfo=1
 SupportXPThemes=0
 CompilerSet=0
-CompilerSettings=00000000a0000000001000000
+CompilerSettings=00000000a0000000000000000
 UnitCount=3
 
 [VersionInfo]
 Major=0
-Minor=6
-Release=0
-Build=1414
+Minor=8
+Release=4
+Build=2296
 LanguageID=1033
 CharsetID=1252
 CompanyName=Wenderson (KiddieOS.Community)
-FileVersion=0.6.0.1414
+FileVersion=0.8.4.2296
 FileDescription=WR80X Compiler Language (High-Level)
 InternalName=
 LegalCopyright=
 LegalTrademarks=
 OriginalFilename=
 ProductName=WR80X Compiler
-ProductVersion=0.6.0.1414
+ProductVersion=0.8.4.2296
 AutoIncBuildNr=1
 SyncProduct=1
 
